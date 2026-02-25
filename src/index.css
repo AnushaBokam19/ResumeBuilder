@@ -35,3 +35,27 @@ html,body,#root{height:100%;margin:0;background:var(--bg);font-family:Inter, ui-
 
 .template-minimal{font-family: "Helvetica Neue", Arial, sans-serif;color:#111827;padding:10px}
 .template-minimal h1{font-weight:700}
+
+/* Print styles for resume preview */
+@media print {
+  /* Hide navigation, buttons, and other UI */
+  nav, header, footer, .topbar, .context-header, .btn, .TopNav, .TopBar, .build-panel, .proof-footer { display: none !important; }
+  /* Ensure white background and consistent margins */
+  body, html, #root, .preview-container, .live-preview, .template-classic, .template-modern, .template-minimal {
+    background: #fff !important;
+    color: #000 !important;
+    box-shadow: none !important;
+  }
+  .preview-container, .live-preview {
+    padding: 18mm !important;
+    margin: 0 !important;
+  }
+  /* Prevent splitting bullets across pages where possible */
+  .preview-container section, .live-preview section {
+    page-break-inside: avoid;
+  }
+  /* Keep headings with following content */
+  h1, h2, h3 { page-break-after: avoid; page-break-inside: avoid; }
+  /* Remove borders and dashed outlines */
+  .live-preview { border: none !important; }
+}

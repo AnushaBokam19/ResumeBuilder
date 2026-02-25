@@ -137,3 +137,58 @@ export function getImprovements(data = {}) {
   return improvements.slice(0, 3);
 }
 
+export function generatePlainText(data = {}) {
+  const { personal = {}, summary = "", education = [], experience = [], projects = [], skills = "", links = {} } = data;
+  const lines = [];
+  if (personal.name) lines.push(personal.name);
+  const contact = [personal.email, personal.phone, personal.location].filter(Boolean).join(" • ");
+  if (contact) lines.push(contact);
+  lines.push("");
+  if (summary) {
+    lines.push("Summary");
+    lines.push(summary);
+    lines.push("");
+  }
+  if (education && education.length > 0 && education.some((e) => e && (e.title || e.org))) {
+    lines.push("Education");
+    education.forEach((ed) => {
+      if (ed && (ed.title || ed.org)) {
+        lines.push(`${ed.title || ""}${ed.org ? " — " + ed.org : ""}${ed.start || ed.end ? " (" + [ed.start, ed.end].filter(Boolean).join(" — ") + ")" : ""}`);
+      }
+    });
+    lines.push("");
+  }
+  if (experience && experience.length > 0 && experience.some((e) => e && (e.title || e.org || e.desc))) {
+    lines.push("Experience");
+    experience.forEach((ex) => {
+      if (ex && (ex.title || ex.org || ex.desc)) {
+        lines.push(`${ex.title || ""}${ex.org ? " — " + ex.org : ""}${ex.start || ex.end ? " (" + [ex.start, ex.end].filter(Boolean).join(" — ") + ")" : ""}`);
+        if (ex.desc) lines.push(ex.desc);
+        lines.push("");
+      }
+    });
+  }
+  if (projects && projects.length > 0 && projects.some((p) => p && (p.title || p.desc))) {
+    lines.push("Projects");
+    projects.forEach((p) => {
+      if (p && (p.title || p.desc)) {
+        lines.push(`${p.title || ""}`);
+        if (p.desc) lines.push(p.desc);
+        lines.push("");
+      }
+    });
+  }
+  if (skills) {
+    lines.push("Skills");
+    lines.push(skills);
+    lines.push("");
+  }
+  if (links && (links.github || links.linkedin)) {
+    lines.push("Links");
+    if (links.github) lines.push(`GitHub: ${links.github}`);
+    if (links.linkedin) lines.push(`LinkedIn: ${links.linkedin}`);
+    lines.push("");
+  }
+  return lines.join("\n");
+}
+

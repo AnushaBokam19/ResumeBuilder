@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { loadData, saveData, computeScore, getImprovements } from "./resumeStore";
+import { generatePlainText } from "./resumeStore";
 
 export default function Preview() {
   const [data, setData] = useState({});
@@ -28,6 +29,44 @@ export default function Preview() {
 
   return (
     <div className={`preview-container template-${template.toLowerCase()}`} style={{ maxWidth: 760, margin: "0 auto", background: "#fff", padding: 24, borderRadius: 8, color: "#000" }}>
+      <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginBottom: 8 }}>
+        <button
+          className="btn"
+          onClick={() => {
+            // Validation warning (non-blocking)
+            const missingName = !personal.name;
+            const hasWork = (experience || []).some((e) => e && (e.title || e.desc)) || (projects || []).some((p) => p && (p.title || p.desc));
+            if (missingName || !hasWork) {
+              alert("Warning: Your resume may look incomplete.");
+            }
+            // Trigger print
+            window.print();
+          }}
+        >
+          Print / Save as PDF
+        </button>
+        <button
+          className="btn secondary"
+          onClick={async () => {
+            const txt = generatePlainText(data);
+            try {
+              await navigator.clipboard.writeText(txt);
+              alert("Resume copied as plain text.");
+            } catch (e) {
+              // fallback
+              const ta = document.createElement("textarea");
+              ta.value = txt;
+              document.body.appendChild(ta);
+              ta.select();
+              document.execCommand("copy");
+              document.body.removeChild(ta);
+              alert("Resume copied as plain text.");
+            }
+          }}
+        >
+          Copy Resume as Text
+        </button>
+      </div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
         <div>
           <h1 style={{ margin: 0, fontSize: 22 }}>{personal.name || "Your Name"}</h1>
