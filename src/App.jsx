@@ -4,6 +4,13 @@ import Layout from "./rb/Layout";
 import StepPage from "./rb/Step";
 import Proof from "./rb/Proof";
 
+// Premium app imports
+import PremiumLayout from "./premium/Layout";
+import Home from "./premium/Home";
+import Builder from "./premium/Builder";
+import Preview from "./premium/Preview";
+import ProofMain from "./premium/ProofMain";
+
 const STEP_ROUTES = [
   "/rb/01-problem",
   "/rb/02-market",
@@ -38,6 +45,14 @@ function ProtectedStep({ children }) {
 export default function App() {
   return (
     <Routes>
+      {/* Premium app routes */}
+      <Route path="/" element={<PremiumLayout />}>
+        <Route index element={<Home />} />
+        <Route path="builder" element={<Builder />} />
+        <Route path="preview" element={<Preview />} />
+        <Route path="proof" element={<ProofMain />} />
+      </Route>
+
       <Route
         path="/rb/*"
         element={
@@ -57,7 +72,7 @@ export default function App() {
         <Route path="proof" element={<Proof />} />
       </Route>
 
-      <Route path="*" element={<Navigate to="/rb/01-problem" replace />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
