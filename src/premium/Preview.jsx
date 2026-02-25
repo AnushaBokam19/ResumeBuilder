@@ -1,22 +1,33 @@
 import React, { useEffect, useState } from "react";
-import { loadData, computeScore } from "./resumeStore";
+import { loadData, saveData, computeScore, getImprovements } from "./resumeStore";
 
 export default function Preview() {
   const [data, setData] = useState({});
   const [score, setScore] = useState(0);
+  const [template, setTemplate] = useState("Classic");
+  const [improvements, setImprovements] = useState([]);
 
   useEffect(() => {
     const saved = loadData();
     if (saved) {
       setData(saved);
       setScore(computeScore(saved));
+      setTemplate(saved.template || "Classic");
+      setImprovements(getImprovements(saved));
     }
   }, []);
+
+  function changeTemplate(t) {
+    setTemplate(t);
+    const next = { ...(data || {}), template: t };
+    saveData(next);
+    setData(next);
+  }
 
   const { personal = {}, summary = "", education = [], experience = [], projects = [], skills = "", links = {} } = data;
 
   return (
-    <div style={{ maxWidth: 760, margin: "0 auto", background: "#fff", padding: 24, borderRadius: 8, color: "#000" }}>
+    <div className={`preview-container template-${template.toLowerCase()}`} style={{ maxWidth: 760, margin: "0 auto", background: "#fff", padding: 24, borderRadius: 8, color: "#000" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
         <div>
           <h1 style={{ margin: 0, fontSize: 22 }}>{personal.name || "Your Name"}</h1>
@@ -28,6 +39,15 @@ export default function Preview() {
           <div style={{ fontWeight: 700 }}>ATS Readiness</div>
           <div style={{ fontSize: 18, fontWeight: 700 }}>{score}</div>
         </div>
+      </div>
+
+      {/* Template tabs */}
+      <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
+        {["Classic", "Modern", "Minimal"].map((t) => (
+          <button key={t} className={"btn " + (template === t ? "" : "secondary")} onClick={() => changeTemplate(t)}>
+            {t}
+          </button>
+        ))}
       </div>
 
       {summary && (
@@ -95,6 +115,18 @@ export default function Preview() {
             {links.linkedin ? <div><a href={links.linkedin} target="_blank" rel="noreferrer">{links.linkedin}</a></div> : null}
           </div>
         </section>
+      )}
+
+      {/* Improvement panel */}
+      {improvements.length > 0 && (
+        <div style={{ marginTop: 20 }}>
+          <div style={{ fontWeight: 700 }}>Top 3 Improvements</div>
+          <ul style={{ marginTop: 8 }}>
+            {improvements.map((imp, i) => (
+              <li key={i} style={{ color: "#6b7280", fontSize: 13 }}>{imp}</li>
+            ))}
+          </ul>
+        </div>
       )}
     </div>
   );

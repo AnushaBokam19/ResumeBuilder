@@ -83,3 +83,57 @@ export function getSuggestions(data = {}) {
   return suggestions;
 }
 
+// Action verbs used for bullet guidance
+export const ACTION_VERBS = [
+  "Built",
+  "Developed",
+  "Designed",
+  "Implemented",
+  "Led",
+  "Improved",
+  "Created",
+  "Optimized",
+  "Automated",
+  "Built",
+  "Managed",
+  "Reduced",
+  "Increased",
+  "Decreased"
+];
+
+// Evaluate bullets in a multi-line description. Returns array of { text, startsWithVerb, hasNumber }
+export function evaluateBullets(text = "") {
+  const lines = (text || "").split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  return lines.map((line) => {
+    const startsWithVerb = ACTION_VERBS.some((v) => {
+      const re = new RegExp("^" + v + "\\b", "i");
+      return re.test(line);
+    });
+    const hasNumberFlag = hasNumbers(line);
+    return { text: line, startsWithVerb, hasNumber: hasNumberFlag };
+  });
+}
+
+// Top improvements (prioritized). Returns up to 3 improvement strings.
+export function getImprovements(data = {}) {
+  const improvements = [];
+  const summaryWords = wordCount(data.summary);
+  const projectCount = (data.projects || []).filter(Boolean).length;
+  const expCount = (data.experience || []).length;
+  const skillsCount = (data.skills || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean).length;
+  const anyMeasurable =
+    (data.experience || []).some((e) => hasNumbers(e.desc)) ||
+    (data.projects || []).some((p) => hasNumbers(p.desc));
+
+  if (projectCount < 2) improvements.push("Add at least 2 projects.");
+  if (!anyMeasurable) improvements.push("Add measurable impact (numbers) in bullets.");
+  if (summaryWords < 40) improvements.push("Expand your summary to ~40–120 words.");
+  if (skillsCount < 8) improvements.push("Add more skills (target 8+).");
+  if (expCount === 0) improvements.push("Add experience — include internships or project work.");
+
+  return improvements.slice(0, 3);
+}
+

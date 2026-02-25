@@ -22,3 +22,16 @@ html,body,#root{height:100%;margin:0;background:var(--bg);font-family:Inter, ui-
 .step-controls{margin-top:12px;display:flex;gap:8px;align-items:center}
 .link-input{width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px}
 .status-pill{padding:6px 10px;border-radius:999px;background:#e6f4ea;color:#065f46;font-weight:600}
+
+/* Live preview base */
+.live-preview{border-radius:6px}
+
+/* Template styles (layout-only, no content changes) */
+.template-classic{font-family: "Georgia", "Times New Roman", serif;color:#000;padding:16px}
+.template-classic .step-title{font-weight:700}
+
+.template-modern{font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;color:#111827;padding:12px}
+.template-modern .step-title{letter-spacing:0.2px}
+
+.template-minimal{font-family: "Helvetica Neue", Arial, sans-serif;color:#111827;padding:10px}
+.template-minimal h1{font-weight:700}

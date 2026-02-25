@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { loadData, saveData, computeScore, getSuggestions } from "./resumeStore";
+import { loadData, saveData, computeScore, getSuggestions, evaluateBullets, getImprovements } from "./resumeStore";
 
 const emptyEntry = () => ({ id: Date.now() + Math.random(), title: "", org: "", start: "", end: "", desc: "" });
 
@@ -13,6 +13,8 @@ export default function Builder() {
   const [links, setLinks] = useState({ github: "", linkedin: "" });
   const [score, setScore] = useState(0);
   const [suggestions, setSuggestions] = useState([]);
+  const [template, setTemplate] = useState("Classic");
+  const [improvements, setImprovements] = useState([]);
 
   // Load saved data on mount
   useEffect(() => {
@@ -25,16 +27,18 @@ export default function Builder() {
       setProjects(saved.projects && saved.projects.length ? saved.projects : [emptyEntry()]);
       setSkills(saved.skills || "");
       setLinks(saved.links || { github: "", linkedin: "" });
+      setTemplate(saved.template || "Classic");
     }
   }, []);
 
   // Autosave and compute score/suggestions on change
   useEffect(() => {
-    const data = { personal, summary, education, experience, projects, skills, links };
+    const data = { personal, summary, education, experience, projects, skills, links, template };
     saveData(data);
     setScore(computeScore(data));
     setSuggestions(getSuggestions(data));
-  }, [personal, summary, education, experience, projects, skills, links]);
+    setImprovements(getImprovements(data));
+  }, [personal, summary, education, experience, projects, skills, links, template]);
 
   function add(arrSetter) {
     arrSetter((s) => [...s, emptyEntry()]);
@@ -67,9 +71,22 @@ export default function Builder() {
       <section style={{ flex: 1, background: "#fff", padding: 20, borderRadius: 8 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <h3 style={{ margin: 0 }}>Builder</h3>
-          <button className="btn secondary" onClick={loadSample}>
-            Load Sample Data
-          </button>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <div style={{ display: "flex", gap: 6 }}>
+              {["Classic", "Modern", "Minimal"].map((t) => (
+                <button
+                  key={t}
+                  className={"btn " + (template === t ? "" : "secondary")}
+                  onClick={() => setTemplate(t)}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+            <button className="btn secondary" onClick={loadSample}>
+              Load Sample Data
+            </button>
+          </div>
         </div>
 
         <div style={{ marginTop: 12 }}>
@@ -157,12 +174,22 @@ export default function Builder() {
                 />
               </div>
               <textarea
-                placeholder="Description"
+                placeholder="Description (use new lines for bullets)"
                 className="textarea"
                 value={ex.desc}
                 onChange={(e) => updateExperience(ex.id, "desc", e.target.value)}
-                style={{ marginTop: 6, height: 60 }}
+                style={{ marginTop: 6, height: 80 }}
               />
+              {/* Bullet guidance */}
+              <div style={{ marginTop: 6 }}>
+                {evaluateBullets(ex.desc).map((b, i) => (
+                  <div key={i} style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>
+                    • {b.text}
+                    {!b.startsWithVerb && <span style={{ marginLeft: 8, opacity: 0.9 }}> — Start with a strong action verb.</span>}
+                    {!b.hasNumber && <span style={{ marginLeft: 8, opacity: 0.9 }}> — Add measurable impact (numbers).</span>}
+                  </div>
+                ))}
+              </div>
             </div>
           ))}
           <button className="btn secondary" onClick={() => add(setExperience)}>
@@ -181,12 +208,21 @@ export default function Builder() {
                 onChange={(e) => updateProject(p.id, "title", e.target.value)}
               />
               <textarea
-                placeholder="Description"
+                placeholder="Description (use new lines for bullets)"
                 className="textarea"
                 value={p.desc}
                 onChange={(e) => updateProject(p.id, "desc", e.target.value)}
-                style={{ marginTop: 6, height: 60 }}
+                style={{ marginTop: 6, height: 80 }}
               />
+              <div style={{ marginTop: 6 }}>
+                {evaluateBullets(p.desc).map((b, i) => (
+                  <div key={i} style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>
+                    • {b.text}
+                    {!b.startsWithVerb && <span style={{ marginLeft: 8, opacity: 0.9 }}> — Start with a strong action verb.</span>}
+                    {!b.hasNumber && <span style={{ marginLeft: 8, opacity: 0.9 }}> — Add measurable impact (numbers).</span>}
+                  </div>
+                ))}
+              </div>
             </div>
           ))}
           <button className="btn secondary" onClick={() => add(setProjects)}>
@@ -208,7 +244,7 @@ export default function Builder() {
 
       <aside style={{ width: 420, background: "#fff", padding: 20, borderRadius: 8 }}>
         <h3 style={{ marginTop: 0 }}>Live Preview</h3>
-        <div style={{ border: "1px dashed #e5e7eb", padding: 12, minHeight: 400 }}>
+        <div className={`live-preview template-${template.toLowerCase()}`} style={{ border: "1px dashed #e5e7eb", padding: 12, minHeight: 400 }}>
           {/* Score meter */}
           <div style={{ marginBottom: 12 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -233,6 +269,18 @@ export default function Builder() {
                   </li>
                 ))}
               </ul>
+            )}
+
+            {/* Improvement panel */}
+            {improvements.length > 0 && (
+              <div style={{ marginTop: 10 }}>
+                <div style={{ fontWeight: 700 }}>Top 3 Improvements</div>
+                <ul style={{ marginTop: 6 }}>
+                  {improvements.map((imp, i) => (
+                    <li key={i} style={{ color: "#6b7280", fontSize: 13 }}>{imp}</li>
+                  ))}
+                </ul>
+              </div>
             )}
           </div>
 
