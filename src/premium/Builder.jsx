@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { loadData, saveData, computeScore, getSuggestions } from "./resumeStore";
 
 const emptyEntry = () => ({ id: Date.now() + Math.random(), title: "", org: "", start: "", end: "", desc: "" });
 
@@ -10,6 +11,30 @@ export default function Builder() {
   const [projects, setProjects] = useState([emptyEntry()]);
   const [skills, setSkills] = useState("");
   const [links, setLinks] = useState({ github: "", linkedin: "" });
+  const [score, setScore] = useState(0);
+  const [suggestions, setSuggestions] = useState([]);
+
+  // Load saved data on mount
+  useEffect(() => {
+    const saved = loadData();
+    if (saved) {
+      setPersonal(saved.personal || { name: "", email: "", phone: "", location: "" });
+      setSummary(saved.summary || "");
+      setEducation(saved.education && saved.education.length ? saved.education : [emptyEntry()]);
+      setExperience(saved.experience && saved.experience.length ? saved.experience : [emptyEntry()]);
+      setProjects(saved.projects && saved.projects.length ? saved.projects : [emptyEntry()]);
+      setSkills(saved.skills || "");
+      setLinks(saved.links || { github: "", linkedin: "" });
+    }
+  }, []);
+
+  // Autosave and compute score/suggestions on change
+  useEffect(() => {
+    const data = { personal, summary, education, experience, projects, skills, links };
+    saveData(data);
+    setScore(computeScore(data));
+    setSuggestions(getSuggestions(data));
+  }, [personal, summary, education, experience, projects, skills, links]);
 
   function add(arrSetter) {
     arrSetter((s) => [...s, emptyEntry()]);
@@ -17,6 +42,14 @@ export default function Builder() {
 
   function updateExperience(id, field, value) {
     setExperience((prev) => prev.map((it) => (it.id === id ? { ...it, [field]: value } : it)));
+  }
+ 
+  function updateEducation(id, field, value) {
+    setEducation((prev) => prev.map((it) => (it.id === id ? { ...it, [field]: value } : it)));
+  }
+
+  function updateProject(id, field, value) {
+    setProjects((prev) => prev.map((it) => (it.id === id ? { ...it, [field]: value } : it)));
   }
 
   function loadSample() {
@@ -56,9 +89,35 @@ export default function Builder() {
 
         <div style={{ marginTop: 12 }}>
           <h4>Education</h4>
-          {education.map((ed, idx) => (
-            <div key={ed.id} style={{ marginBottom: 8 }}>
-              <input placeholder="Degree" className="link-input" />
+          {education.map((ed) => (
+            <div key={ed.id} style={{ marginBottom: 8, borderRadius: 6, padding: 8, background: "#f8fafc" }}>
+              <input
+                placeholder="Degree / Title"
+                className="link-input"
+                value={ed.title}
+                onChange={(e) => updateEducation(ed.id, "title", e.target.value)}
+              />
+              <input
+                placeholder="School / Organization"
+                className="link-input"
+                value={ed.org}
+                onChange={(e) => updateEducation(ed.id, "org", e.target.value)}
+                style={{ marginTop: 6 }}
+              />
+              <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+                <input
+                  placeholder="Start"
+                  className="link-input"
+                  value={ed.start}
+                  onChange={(e) => updateEducation(ed.id, "start", e.target.value)}
+                />
+                <input
+                  placeholder="End"
+                  className="link-input"
+                  value={ed.end}
+                  onChange={(e) => updateEducation(ed.id, "end", e.target.value)}
+                />
+              </div>
             </div>
           ))}
           <button className="btn secondary" onClick={() => add(setEducation)}>
@@ -114,8 +173,20 @@ export default function Builder() {
         <div style={{ marginTop: 12 }}>
           <h4>Projects</h4>
           {projects.map((p) => (
-            <div key={p.id} style={{ marginBottom: 8 }}>
-              <input placeholder="Project name" className="link-input" />
+            <div key={p.id} style={{ marginBottom: 8, borderRadius: 6, padding: 8, background: "#f8fafc" }}>
+              <input
+                placeholder="Project name"
+                className="link-input"
+                value={p.title}
+                onChange={(e) => updateProject(p.id, "title", e.target.value)}
+              />
+              <textarea
+                placeholder="Description"
+                className="textarea"
+                value={p.desc}
+                onChange={(e) => updateProject(p.id, "desc", e.target.value)}
+                style={{ marginTop: 6, height: 60 }}
+              />
             </div>
           ))}
           <button className="btn secondary" onClick={() => add(setProjects)}>
@@ -138,23 +209,106 @@ export default function Builder() {
       <aside style={{ width: 420, background: "#fff", padding: 20, borderRadius: 8 }}>
         <h3 style={{ marginTop: 0 }}>Live Preview</h3>
         <div style={{ border: "1px dashed #e5e7eb", padding: 12, minHeight: 400 }}>
-          <div style={{ fontWeight: 700, fontSize: 18 }}>{personal.name || "Your Name"}</div>
-          <div style={{ color: "#6b7280", marginBottom: 12 }}>{personal.email} • {personal.phone} • {personal.location}</div>
-          <div style={{ marginTop: 8, marginBottom: 8, fontStyle: "italic", color: "#374151" }}>{summary || "Summary will appear here."}</div>
-          <div style={{ marginTop: 12 }}>
-            <div style={{ fontWeight: 700 }}>Experience</div>
-            {experience.length === 0 ? (
-              <div style={{ color: "#6b7280" }}>No experience yet.</div>
-            ) : (
-              experience.map((ex) => (
-                <div key={ex.id} style={{ marginTop: 8 }}>
-                  <div style={{ fontWeight: 700 }}>{ex.title || "Title" } {ex.org ? `— ${ex.org}` : ""}</div>
-                  <div style={{ color: "#6b7280", fontSize: 13 }}>{ex.start}{ex.end ? ` — ${ex.end}` : ""}</div>
-                  {ex.desc ? <div style={{ marginTop: 4 }}>{ex.desc}</div> : null}
-                </div>
-              ))
+          {/* Score meter */}
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ fontWeight: 700 }}>ATS Readiness Score</div>
+              <div style={{ fontWeight: 700 }}>{score}</div>
+            </div>
+            <div style={{ height: 10, background: "#e6eef8", borderRadius: 8, marginTop: 6 }}>
+              <div
+                style={{
+                  height: "100%",
+                  width: `${Math.min(100, score)}%`,
+                  background: "#0ea5a4",
+                  borderRadius: 8
+                }}
+              />
+            </div>
+            {suggestions.length > 0 && (
+              <ul style={{ marginTop: 8 }}>
+                {suggestions.map((s, i) => (
+                  <li key={i} style={{ color: "#6b7280", fontSize: 13 }}>
+                    {s}
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
+
+          {/* Resume content */}
+          <div style={{ fontWeight: 700, fontSize: 18 }}>{personal.name || "Your Name"}</div>
+          {(personal.email || personal.phone || personal.location) && (
+            <div style={{ color: "#6b7280", marginBottom: 12 }}>
+              {personal.email} {personal.email && (personal.phone || personal.location) ? " • " : ""} {personal.phone} {personal.phone && personal.location ? " • " : ""} {personal.location}
+            </div>
+          )}
+
+          {summary ? (
+            <div style={{ marginTop: 8, marginBottom: 8, fontStyle: "italic", color: "#374151" }}>
+              {summary}
+            </div>
+          ) : null}
+
+          {education && education.some((e) => e && (e.title || e.org)) && (
+            <div style={{ marginTop: 12 }}>
+              <div style={{ fontWeight: 700 }}>Education</div>
+              {education.map((ed) =>
+                ed && (ed.title || ed.org) ? (
+                  <div key={ed.id} style={{ marginTop: 6 }}>
+                    <div style={{ fontWeight: 700 }}>{ed.title || ""} {ed.org ? `— ${ed.org}` : ""}</div>
+                    <div style={{ color: "#6b7280", fontSize: 13 }}>{ed.start}{ed.end ? ` — ${ed.end}` : ""}</div>
+                  </div>
+                ) : null
+              )}
+            </div>
+          )}
+
+          {experience && experience.some((ex) => ex && (ex.title || ex.org || ex.desc)) && (
+            <div style={{ marginTop: 12 }}>
+              <div style={{ fontWeight: 700 }}>Experience</div>
+              {experience.map((ex) =>
+                ex && (ex.title || ex.org || ex.desc) ? (
+                  <div key={ex.id} style={{ marginTop: 8 }}>
+                    <div style={{ fontWeight: 700 }}>{ex.title || "Title"} {ex.org ? `— ${ex.org}` : ""}</div>
+                    <div style={{ color: "#6b7280", fontSize: 13 }}>{ex.start}{ex.end ? ` — ${ex.end}` : ""}</div>
+                    {ex.desc ? <div style={{ marginTop: 4 }}>{ex.desc}</div> : null}
+                  </div>
+                ) : null
+              )}
+            </div>
+          )}
+
+          {projects && projects.some((p) => p && (p.title || p.desc)) && (
+            <div style={{ marginTop: 12 }}>
+              <div style={{ fontWeight: 700 }}>Projects</div>
+              {projects.map((p) =>
+                p && (p.title || p.desc) ? (
+                  <div key={p.id} style={{ marginTop: 8 }}>
+                    <div style={{ fontWeight: 700 }}>{p.title || "Project"}</div>
+                    {p.desc ? <div style={{ marginTop: 4 }}>{p.desc}</div> : null}
+                  </div>
+                ) : null
+              )}
+            </div>
+          )}
+
+          {skills ? (
+            <div style={{ marginTop: 12 }}>
+              <div style={{ fontWeight: 700 }}>Skills</div>
+              <div style={{ color: "#6b7280" }}>{skills}</div>
+            </div>
+          ) : null}
+
+          {(links.github || links.linkedin) && (
+            <div style={{ marginTop: 12 }}>
+              <div style={{ fontWeight: 700 }}>Links</div>
+              <div style={{ color: "#6b7280" }}>
+                {links.github ? <div><a href={links.github} target="_blank" rel="noreferrer">{links.github}</a></div> : null}
+                {links.linkedin ? <div><a href={links.linkedin} target="_blank" rel="noreferrer">{links.linkedin}</a></div> : null}
+              </div>
+            </div>
+          )}
         </div>
       </aside>
     </div>
